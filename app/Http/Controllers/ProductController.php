@@ -8,14 +8,16 @@ use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\Product\ProductCollection;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
+use App\Exceptions\ProductNotBelongsToUser;
 
 class ProductController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth:api')->except('index','show');
+    
     }
-
     /**
      * Display a listing of the resource.
      *
@@ -91,6 +93,7 @@ class ProductController extends Controller
     {
         //return $request->all();
 
+        $this->ProductUserCheck($product);
         $request['detail'] = $request->description;
         unset($request['description']);
         $product->update($request->all());
@@ -107,7 +110,15 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
+        $this->ProductUserCheck($product);
         $product->delete();
         return response('Product Deleted',Response::HTTP_NO_CONTENT);
+    }
+
+    public function ProductUserCheck($product)
+    {
+        if (Auth::id() !== $product->user_id) {
+            throw new ProductNotBelongsToUser;
+        }
     }
 }
